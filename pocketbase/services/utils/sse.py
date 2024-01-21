@@ -5,6 +5,7 @@ import dataclasses
 import threading
 
 import httpx
+import time
 
 
 @dataclasses.dataclass
@@ -48,7 +49,7 @@ class EventLoop(threading.Thread):
             self.url,
             headers=self.headers,
             data=self.payload,
-            timeout=None,
+            timeout=10,
         ) as r:
             for chunk in r.iter_bytes():
                 for line in chunk.splitlines(True):
@@ -94,7 +95,11 @@ class EventLoop(threading.Thread):
                         break
                     if event.event in self.listeners:
                         self.listeners[event.event](event)
-            except Exception:
+            except httpx.ReadTimeout as http_exception:
+                time.sleep(1)
+            except httpx.ConnectError as http_exception:
+                time.sleep(1)
+            except Exception as e:
                 self.kill = True
 
 
